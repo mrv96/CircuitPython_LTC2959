@@ -15,6 +15,7 @@ name = "circuitpython-ltc2959"
 description = "CircuitPython module for the LTC2959 ultra-low power battery gas gauge."
 version = "0.0.0+auto.0"
 readme = "README.rst"
+requires-python = ">= 3.9"
 authors = [
     {name = "mrv96"}
 ]
@@ -42,8 +43,6 @@ classifiers = [
 dynamic = ["dependencies", "optional-dependencies"]
 
 [tool.setuptools]
-# TODO: IF LIBRARY FILES ARE A PACKAGE FOLDER,
-#       CHANGE `py_modules = ['...']` TO `packages = ['...']`
 py-modules = ["ltc2959"]
 
 [tool.setuptools.dynamic]
