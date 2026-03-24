@@ -32,6 +32,7 @@ from adafruit_bus_device.i2c_device import I2CDevice
 from adafruit_register.i2c_bit import ROBit, RWBit
 from adafruit_register.i2c_bits import RWBits
 from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
+from busio import I2C
 
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/mrv96/CircuitPython_LTC2959.git"
@@ -122,6 +123,8 @@ class LTC2959:
     gpio_threshold_high = UnaryStruct(LTC2959_REG_GPIO_THRESHOLD_HIGH_MSB, ">h")
     gpio_threshold_low = UnaryStruct(LTC2959_REG_GPIO_THRESHOLD_LOW_MSB, ">h")
 
+    # def __init__(self, i2c: I2C, address: int = LTC2959_I2C_ADDRESS, probe: bool = True) -> None:
+    #     self.device = I2CDevice(i2c, address, probe)
     def __init__(self, i2c: I2CDevice) -> None:
         self.i2c_device = i2c
         self.sampling = 0  # TODO: use an enum
