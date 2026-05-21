@@ -28,6 +28,8 @@ Implementation Notes
 * Adafruit's Register library: https://github.com/adafruit/Adafruit_CircuitPython_Register
 """
 
+from enum import IntEnum
+
 from adafruit_bus_device.i2c_device import I2CDevice
 from adafruit_register.i2c_bit import ROBit, RWBit
 from adafruit_register.i2c_bits import RWBits
@@ -88,6 +90,33 @@ LTC2959_REG_GPIO_THRESHOLD_LOW_MSB = 0x2D
 LTC2959_REG_GPIO_THRESHOLD_LOW_LSB = 0x2E
 
 
+class LTC2959AdcMode(IntEnum):
+    SLEEP = 0
+    SMART_SLEEP = 1
+    CONTINUOUS_VOLTAGE = 2
+    CONTINUOUS_CURRENT = 3
+    CONTINUOUS_ALTERNATE = 4
+    SINGLE_SHOT = 5
+    CONTINUOUS = 6
+    DEFAULT = SLEEP
+
+
+class LTC2959AdcGpio(IntEnum):
+    ALERT = 0
+    CHARGE_COMPLETE = 1
+    ANALOG_DUAL_SUPPLY = 2
+    ANALOG_SINGLE_SUPPLY = 3
+    DEFAULT = ANALOG_SINGLE_SUPPLY
+
+
+class LTC2959AdcVoltageInput(IntEnum):
+    VDD = 0
+    VBAT_LOW_SIDE_SENSING = 0
+    SENSEN = 1
+    VBAT_HIGH_SIDE_SENSING = 1
+    DEFAULT = VDD
+
+
 class LTC2959:
     gpio_alert = ROBit(LTC2959_REG_STATUS, 7)
     current_alert = ROBit(LTC2959_REG_STATUS, 6)
@@ -122,27 +151,52 @@ class LTC2959:
     gpio_threshold_high = UnaryStruct(LTC2959_REG_GPIO_THRESHOLD_HIGH_MSB, ">h")
     gpio_threshold_low = UnaryStruct(LTC2959_REG_GPIO_THRESHOLD_LOW_MSB, ">h")
 
-    def __init__(self, i2c: I2CDevice) -> None:
+    def __init__(self, i2c: I2CDevice, rsense: float = 50e-3) -> None:
         self.i2c_device = i2c
-        self.sampling = 0  # TODO: use an enum
+        self.adc_single_shot: bool = False
+        self.rsense = rsense
 
-    def __trigger_adc(self):
-        if self.sampling == 0b101:
-            self.adc_mode = 0b101
+    @staticmethod
+    def __raw_to_voltage(value: int) -> float:
+        return 62.6 / 65536 * value
 
-    def set_adc_mode(self, value):
-        self.sampling = value
-        if self.sampling != 0b101:
-            self.adc_mode = self.sampling
+    @staticmethod
+    def __voltage_to_raw(value: float) -> int:
+        return round(value / 62.6 * 65536) & 0xFFFF
 
-    def read_voltage(self):
-        self.__trigger_adc()
-        return self.voltage * 0.995e-3
+    def __raw_to_current(self, value: int) -> float:
+        return 97.5e-3 / self.rsense / 32768 * value
 
-    def read_current(self):
-        self.__trigger_adc()
-        return self.current * 2.975e-6
+    def __current_to_raw(self, value: float) -> int:
+        return round(value * self.rsense / 97.5e-3 * 32768) & 0xFFFF
 
-    def read_temperature(self):
-        self.__trigger_adc()
-        return self.temperature * 12.8e-3 - 273.15
+    @staticmethod
+    def __raw_to_temperature(value: int) -> float:
+        return 825 / 65536 * value - 273.15
+
+    @staticmethod
+    def __temperature_to_raw(value: float) -> int:
+        return round((value + 273.15) / 825 * 65536) & 0xFFFF
+
+    def set_adc_config(
+        self, mode: LTC2959AdcMode, gpio: LTC2959AdcGpio, vin: LTC2959AdcVoltageInput
+    ) -> None:
+        self.adc_single_shot = True if mode == LTC2959AdcMode.SINGLE_SHOT else False
+        if not self.adc_single_shot:
+            self.adc_mode = mode
+        self.gpio_configure = gpio
+        self.configure_voltage_input = vin
+
+    def read_adc_single_shot(self) -> None:
+        if not self.adc_single_shot:
+            raise RuntimeError("ADC is not configured in single-shot mode")
+        self.adc_mode = LTC2959AdcMode.SINGLE_SHOT
+
+    def get_voltage(self) -> float:
+        return self.__raw_to_voltage(self.voltage)
+
+    def get_current(self) -> float:
+        return self.__raw_to_current(self.current)
+
+    def get_temperature(self) -> float:
+        return self.__raw_to_temperature(self.temperature)
