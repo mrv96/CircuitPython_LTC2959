@@ -40,6 +40,7 @@ __repo__ = "https://github.com/mrv96/CircuitPython_LTC2959.git"
 
 
 LTC2959_I2C_ADDRESS = 0x63
+LTC2959_CULOMB_COUNTER_RESET_VALUE = 0x80000000
 
 LTC2959_REG_STATUS = 0x00
 LTC2959_REG_ADC_CONTROL = 0x01
@@ -156,6 +157,12 @@ class LTC2959:
         self.adc_single_shot: bool = False
         self.rsense = rsense
 
+    def __raw_to_charge(self, value: int) -> float:
+        return 50e-3 / self.rsense * 533e-9 * value
+
+    def __charge_to_raw(self, value: float) -> int:
+        return round(self.rsense / 50e-3 * value / 533e-9) & 0xFFFFFFFF
+
     @staticmethod
     def __raw_to_voltage(value: int) -> float:
         return 62.6 / 65536 * value
@@ -191,6 +198,19 @@ class LTC2959:
         if not self.adc_single_shot:
             raise RuntimeError("ADC is not configured in single-shot mode")
         self.adc_mode = LTC2959AdcMode.SINGLE_SHOT
+
+    def get_absolute_accumulated_charge(self) -> float:
+        return self.__raw_to_charge(self.accumulated_charge)
+
+    def get_relative_accumulated_charge(
+        self, ref_raw_val: int = LTC2959_CULOMB_COUNTER_RESET_VALUE
+    ) -> float:
+        accumulated_charge = self.accumulated_charge
+        if accumulated_charge >= ref_raw_val:
+            res = self.__raw_to_charge(self.accumulated_charge - ref_raw_val)
+        else:
+            res = -self.__raw_to_charge(ref_raw_val - self.accumulated_charge)
+        return res
 
     def get_voltage(self) -> float:
         return self.__raw_to_voltage(self.voltage)
