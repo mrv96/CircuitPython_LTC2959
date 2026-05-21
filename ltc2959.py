@@ -132,6 +132,14 @@ class LTC2959AdcVoltageInput(IntEnum):
     DEFAULT = VDD
 
 
+class LTC2959Deband(IntEnum):
+    VOLTAGE_0UV = 0
+    VOLTAGE_20UV = 1
+    VOLTAGE_40UV = 2
+    VOLTAGE_80UV = 3
+    DEFAULT = VOLTAGE_20UV
+
+
 class LTC2959:
     status = ROUnaryStruct(LTC2959_REG_STATUS, "B")
     adc_mode = RWBits(3, LTC2959_REG_ADC_CONTROL, 5)
@@ -208,6 +216,9 @@ class LTC2959:
         if not self.adc_single_shot:
             raise RuntimeError("ADC is not configured in single-shot mode")
         self.adc_mode = LTC2959AdcMode.SINGLE_SHOT
+
+    def set_deband(self, value: LTC2959Deband) -> None:
+        self.culomb_counter_deband = value
 
     def get_absolute_accumulated_charge(self) -> float:
         return self.__raw_to_charge(self.accumulated_charge)
