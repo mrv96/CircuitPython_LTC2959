@@ -28,10 +28,11 @@ Implementation Notes
 * Adafruit's Register library: https://github.com/adafruit/Adafruit_CircuitPython_Register
 """
 
+from ctypes import Structure, c_uint8
 from enum import IntEnum
 
 from adafruit_bus_device.i2c_device import I2CDevice
-from adafruit_register.i2c_bit import ROBit, RWBit
+from adafruit_register.i2c_bit import RWBit
 from adafruit_register.i2c_bits import RWBits
 from adafruit_register.i2c_struct import ROUnaryStruct, UnaryStruct
 
@@ -91,6 +92,19 @@ LTC2959_REG_GPIO_THRESHOLD_LOW_MSB = 0x2D
 LTC2959_REG_GPIO_THRESHOLD_LOW_LSB = 0x2E
 
 
+class LTC2959Status(Structure):
+    _fields_ = [
+        ("uvlo_alert", c_uint8, 1),
+        ("voltage_alert", c_uint8, 1),
+        ("charge_alert_low", c_uint8, 1),
+        ("charge_alert_high", c_uint8, 1),
+        ("temperature_alert", c_uint8, 1),
+        ("charge_overflow_underflow", c_uint8, 1),
+        ("current_alert", c_uint8, 1),
+        ("gpio_alert", c_uint8, 1),
+    ]
+
+
 class LTC2959AdcMode(IntEnum):
     SLEEP = 0
     SMART_SLEEP = 1
@@ -119,14 +133,7 @@ class LTC2959AdcVoltageInput(IntEnum):
 
 
 class LTC2959:
-    gpio_alert = ROBit(LTC2959_REG_STATUS, 7)
-    current_alert = ROBit(LTC2959_REG_STATUS, 6)
-    charge_overflow_underflow = ROBit(LTC2959_REG_STATUS, 5)
-    temperature_alert = ROBit(LTC2959_REG_STATUS, 4)
-    charge_alert_high = ROBit(LTC2959_REG_STATUS, 3)
-    charge_alert_low = ROBit(LTC2959_REG_STATUS, 2)
-    voltage_alert = ROBit(LTC2959_REG_STATUS, 1)
-    uvlo_alert = ROBit(LTC2959_REG_STATUS, 0)
+    status = ROUnaryStruct(LTC2959_REG_STATUS, "B")
     adc_mode = RWBits(3, LTC2959_REG_ADC_CONTROL, 5)
     gpio_configure = RWBits(2, LTC2959_REG_ADC_CONTROL, 3)
     configure_voltage_input = RWBit(LTC2959_REG_ADC_CONTROL, 2)
@@ -184,6 +191,9 @@ class LTC2959:
     @staticmethod
     def __temperature_to_raw(value: float) -> int:
         return round((value + 273.15) / 825 * 65536) & 0xFFFF
+
+    def read_status(self) -> LTC2959Status:
+        return LTC2959Status.from_buffer_copy(self.status.to_bytes(1, "big"))
 
     def set_adc_config(
         self, mode: LTC2959AdcMode, gpio: LTC2959AdcGpio, vin: LTC2959AdcVoltageInput
