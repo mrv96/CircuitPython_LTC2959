@@ -137,13 +137,13 @@ class LTC2959:
     voltage = ROUnaryStruct(LTC2959_REG_VOLTAGE_MSB, ">H")
     voltage_threshold_high = UnaryStruct(LTC2959_REG_VOLTAGE_THRESHOLD_HIGH_MSB, ">H")
     voltage_threshold_low = UnaryStruct(LTC2959_REG_VOLTAGE_THRESHOLD_LOW_MSB, ">H")
-    max_voltage_high = UnaryStruct(LTC2959_REG_MAX_VOLTAGE_MSB, ">H")
-    min_voltage_low = UnaryStruct(LTC2959_REG_MIN_VOLTAGE_MSB, ">H")
+    max_voltage = UnaryStruct(LTC2959_REG_MAX_VOLTAGE_MSB, ">H")
+    min_voltage = UnaryStruct(LTC2959_REG_MIN_VOLTAGE_MSB, ">H")
     current = ROUnaryStruct(LTC2959_REG_CURRENT_MSB, ">h")
     current_threshold_high = UnaryStruct(LTC2959_REG_CURRENT_THRESHOLD_HIGH_MSB, ">h")
     current_threshold_low = UnaryStruct(LTC2959_REG_CURRENT_THRESHOLD_LOW_MSB, ">h")
-    max_voltage_high = UnaryStruct(LTC2959_REG_MAX_CURRENT_MSB, ">h")
-    min_voltage_low = UnaryStruct(LTC2959_REG_MIN_CURRENT_MSB, ">h")
+    max_current = UnaryStruct(LTC2959_REG_MAX_CURRENT_MSB, ">h")
+    min_current = UnaryStruct(LTC2959_REG_MIN_CURRENT_MSB, ">h")
     temperature = ROUnaryStruct(LTC2959_REG_TEMPERATURE_MSB, ">H")
     temperature_threshold_high = UnaryStruct(LTC2959_REG_TEMPERATURE_THRESHOLD_HIGH_MSB, ">H")
     temperature_threshold_low = UnaryStruct(LTC2959_REG_TEMPERATURE_THRESHOLD_LOW_MSB, ">H")
@@ -195,8 +195,32 @@ class LTC2959:
     def get_voltage(self) -> float:
         return self.__raw_to_voltage(self.voltage)
 
+    def get_max_voltage(self) -> float:
+        return self.__raw_to_voltage(self.max_voltage)
+
+    def set_max_voltage(self, value: float) -> None:
+        self.max_voltage = self.__voltage_to_raw(value)
+
+    def get_min_voltage(self) -> float:
+        return self.__raw_to_voltage(self.min_voltage)
+
+    def set_min_voltage(self, value: float) -> None:
+        self.min_voltage = self.__voltage_to_raw(value)
+
     def get_current(self) -> float:
         return self.__raw_to_current(self.current)
+
+    def get_max_current(self) -> float:
+        return self.__raw_to_current(self.max_current)
+
+    def set_max_current(self, value: float) -> None:
+        self.max_current = self.__current_to_raw(value)
+
+    def get_min_current(self) -> float:
+        return self.__raw_to_current(self.min_current)
+
+    def set_min_current(self, value: float) -> None:
+        self.min_current = self.__current_to_raw(value)
 
     def get_temperature(self) -> float:
         return self.__raw_to_temperature(self.temperature)
